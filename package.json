@@ -12,8 +12,8 @@
   "author": "chedim@chedim.com",
   "license": "ISC",
   "dependencies": {
-    "debug": "^2.3.2",
-    "mosca": "^2.2.0",
+    "debug": "^4.3.4",
+    "mqtt": "^5.2.1",
     "mqtt-nedb-store": "^0.1.0",
     "jsonschema": "1.2.6"
   },

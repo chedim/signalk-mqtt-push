@@ -16,7 +16,6 @@
 
 const id = 'signalk-mqtt-gw';
 const debug = require('debug')(id);
-const mosca = require('mosca');
 const mqtt = require('mqtt');
 const NeDBStore = require('mqtt-nedb-store');
 
@@ -34,23 +33,8 @@ module.exports = function(app) {
   plugin.schema = {
     title: 'Signal K - MQTT Gateway',
     type: 'object',
-    required: ['port'],
+    required: [],
     properties: {
-      runLocalServer: {
-        type: 'boolean',
-        title: 'Run local server (publish all deltas there in individual topics based on SK path and convert all data published in them by other clients to SK deltas)',
-        default: false,
-      },
-      port: {
-        type: 'number',
-        title: 'Local server port',
-        default: 1883,
-      },
-      sendToRemote: {
-        type: 'boolean',
-        title: 'Send data for paths listed below to remote server',
-        default: false,
-      },
       remoteHost: {
         type: 'string',
         title: 'MQTT server Url (starts with mqtt/mqtts)',
@@ -135,7 +119,7 @@ module.exports = function(app) {
           .debounceImmediate(pathInterval.interval * 1000)
           .onValue(normalizedPathValue =>
             client.publish(
-              'signalk/delta',
+              'signalk/delta/' + pathInterval.path,
               JSON.stringify({
                 context: 'vessels.' + app.selfId,
                 updates: [
