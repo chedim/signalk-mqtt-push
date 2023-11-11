@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-const id = 'signalk-mqtt-gw';
+const id = 'signalk-mqtt-push';
 const debug = require('debug')(id);
 const mqtt = require('mqtt');
 const NeDBStore = require('mqtt-nedb-store');
@@ -26,12 +26,12 @@ module.exports = function(app) {
   var server
 
   plugin.id = id;
-  plugin.name = 'Signal K - MQTT Gateway';
+  plugin.name = 'Signal K - MQTT Push';
   plugin.description =
-    'plugin that provides gateway functionality between Signal K and MQTT';
+    'plugin that pushes selected paths to mqtt broker';
 
   plugin.schema = {
-    title: 'Signal K - MQTT Gateway',
+    title: 'Signal K - MQTT Push',
     type: 'object',
     required: [],
     properties: {
