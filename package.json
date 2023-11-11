@@ -1,6 +1,6 @@
 {
   "name": "signalk-mqtt-push",
-  "version": "1.3.8",
+  "version": "2.0.0",
   "description": "Signal K server plugin that pushes selected paths to an mqtt broker",
   "main": "index.js",
   "scripts": {

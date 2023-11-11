@@ -93,7 +93,7 @@ module.exports = function(app) {
       username: options.username,
       password: options.password,
       will: {
-        topic: 'signalk/will',
+        topic: 'signalk/' + app.selfId,
         payload: 'signalk disconnected'
       }
     });
@@ -124,7 +124,7 @@ module.exports = function(app) {
           .debounceImmediate(pathInterval.interval * 1000)
           .onValue(normalizedPathValue =>
             client.publish(
-              'signalk/delta/' + pathInterval.path,
+              'signalk/' + app.selfId + '/' + pathInterval.path,
               JSON.stringify({
                 context: 'vessels.' + app.selfId,
                 updates: [
