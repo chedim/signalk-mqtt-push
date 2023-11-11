@@ -33,7 +33,7 @@ module.exports = function(app) {
   plugin.schema = {
     title: 'Signal K - MQTT Push',
     type: 'object',
-    required: [],
+    required: ['remoteHost'],
     properties: {
       remoteHost: {
         type: 'string',
@@ -85,23 +85,28 @@ module.exports = function(app) {
   plugin.start = function(options) {
     plugin.onStop = [];
 
-    if (options.runLocalServer) {
-      startLocalServer(options, plugin.onStop);
-    }
-    if (options.sendToRemote) {
-      const manager = NeDBStore(app.getDataDirPath());
-      const client = mqtt.connect(options.remoteHost, {
-        rejectUnauthorized: options.rejectUnauthorized,
-        reconnectPeriod: 60000,
-        clientId: app.selfId,
-        outgoingStore: manager.outgoing,
-        username: options.username,
-        password: options.password
-      });
-      client.on('error', (err) => console.error(err))
-      startSending(options, client, plugin.onStop);
-      plugin.onStop.push(_ => client.end());
-    }
+    const manager = NeDBStore(app.getDataDirPath());
+    const client = mqtt.connect(options.remoteHost, {
+      rejectUnauthorized: options.rejectUnauthorized,
+      clientId: app.selfId,
+      outgoingStore: manager.outgoing,
+      username: options.username,
+      password: options.password,
+      will: {
+        topic: 'signalk/will',
+        payload: 'signalk disconnected'
+      }
+    });
+    client.on('error', (err) => console.error(err))
+    client.on("connect", () => {
+      console.info("Connected to MQTT broker, starting sending messages")
+      startSending(options, client, plugin.onStop)
+    });
+    client.on("disconnect", () => {
+      console.warn("Disconnected from MQTT broker, reconnecting")
+      plugin.start(options)
+    })
+    plugin.onStop.push(_ => client.end());
     started = true;
   };
 
@@ -140,107 +145,5 @@ module.exports = function(app) {
           )
       );
     });
-  }
-
-  function startLocalServer(options, onStop) {
-    server = new mosca.Server(options);
-
-    app.signalk.on('delta', publishLocalDelta);
-    onStop.push(_ => { app.signalk.removeListener('delta', publishLocalDelta) });
-
-    server.on('clientConnected', function(client) {
-      console.log('client connected', client.id);
-    });
-
-    server.on('published', function(packet, client) {
-      if (client) {
-        var skData = extractSkData(packet);
-        if (skData.valid) {
-          app.handleMessage(id, toDelta(skData, client));
-        }
-      }
-    });
-
-    server.on('ready', onReady);
-    // server.on('error', (err) => {
-    //   app.error(err)
-    // })
-
-    function onReady() {
-      try {
-        const mdns = require('mdns');
-        ad = mdns.createAdvertisement(mdns.tcp('mqtt'), options.port);
-        ad.start();
-      } catch (e) {
-        console.error(e.message);
-      }
-      console.log(
-        'Mosca MQTT server is up and running on port ' + options.port
-      );
-      onStop.push(_ => { server.close() });
-    }
-  }
-
-  function publishLocalDelta(delta) {
-    const prefix =
-      (delta.context === app.selfContext
-        ? 'vessels/self'
-        : delta.context.replace('.', '/')) + '/';
-    (delta.updates || []).forEach(update => {
-      (update.values || []).forEach(pathValue => {
-        server.publish({
-          topic: prefix + pathValue.path.replace(/\./g, '/'),
-          payload:
-            pathValue.value === null ? 'null' : toText(pathValue.value),
-          qos: 0,
-          retain: false,
-        });
-      });
-    });
-  }
-
-  function toText(value) {
-    if (typeof value === 'object') {
-      return JSON.stringify(value)
-    }
-    return value.toString()
-  }
-
-  function extractSkData(packet) {
-    const result = {
-      valid: false,
-    };
-    const pathParts = packet.topic.split('/');
-    if (
-      pathParts.length < 3 ||
-      pathParts[0] != 'vessels' ||
-      pathParts[1] != 'self'
-    ) {
-      return result;
-    }
-    result.context = 'vessels.' + app.selfId;
-    result.path = pathParts.splice(2).join('.');
-    if (packet.payload) {
-      result.value = Number(packet.payload.toString());
-    }
-    result.valid = true;
-    return result;
-  }
-
-  function toDelta(skData, client) {
-    return {
-      context: skData.context,
-      updates: [
-        {
-          $source: 'mqtt.' + client.id.replace(/\//g, '_').replace(/\./g, '_'),
-          values: [
-            {
-              path: skData.path,
-              value: skData.value,
-            },
-          ],
-        },
-      ],
-    };
   }
 };
