@@ -7,7 +7,8 @@
     "test": "node test.js"
   },
   "keywords": [
-    "signalk-node-server-plugin"
+    "signalk-node-server-plugin",
+    "signalk-category-cloud"
   ],
   "author": "chedim@chedim.com",
   "license": "ISC",
