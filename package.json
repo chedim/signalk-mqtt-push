@@ -1,5 +1,5 @@
 {
-  "name": "signalk-mqtt-gw",
+  "name": "signalk-mqtt-push",
   "version": "1.3.4",
   "description": "Signal K server plugin that provides gateway functionality between Signal K and MQTT",
   "main": "index.js",
@@ -9,7 +9,7 @@
   "keywords": [
     "signalk-node-server-plugin"
   ],
-  "author": "teppo.kurki@iki,fi",
+  "author": "chedim@chedim.com",
   "license": "ISC",
   "dependencies": {
     "debug": "^2.3.2",
